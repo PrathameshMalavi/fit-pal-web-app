@@ -1,0 +1,201 @@
+<div class="min-h-screen bg-slate-950 px-4 py-6 text-slate-100 selection:bg-emerald-500 selection:text-slate-950 sm:px-6 sm:py-10">
+  <div class="mx-auto max-w-5xl">
+    <div class="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.35em] text-emerald-400">FitPal Onboarding</p>
+        <h1 class="mt-3 text-3xl font-black tracking-tight text-slate-50 sm:text-4xl">{{ isEditMode ? 'Edit your athlete profile' : 'Build your athlete profile' }}</h1>
+        <p class="mt-2 text-sm text-slate-400">{{ isEditMode ? 'Update any detail, then save your changes.' : 'Three short steps, then your dashboard is ready.' }}</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <p class="text-sm font-semibold text-emerald-300">Step {{ currentStep }} of 3</p>
+        <button *ngIf="isEditMode" type="button" (click)="cancelEdit()" [disabled]="saving" class="rounded-xl border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-300 transition hover:border-slate-500 hover:text-white disabled:opacity-50">
+          Cancel editing
+        </button>
+      </div>
+    </div>
+
+    <div class="mb-6 rounded-3xl border border-slate-800 bg-slate-900/70 p-3 sm:mb-8 sm:p-5">
+      <div class="grid grid-cols-3 gap-1 sm:gap-3">
+        <button
+          *ngFor="let step of steps"
+          type="button"
+          (click)="goToStep(step.number)"
+          [disabled]="step.number > currentStep"
+          class="relative flex min-w-0 items-center gap-2 rounded-2xl p-2 text-left transition sm:p-3"
+          [class.bg-emerald-500]="step.number === currentStep"
+          [class.text-slate-950]="step.number === currentStep"
+          [class.bg-slate-800]="step.number < currentStep"
+          [class.text-emerald-300]="step.number < currentStep"
+          [class.text-slate-500]="step.number > currentStep"
+          [class.cursor-pointer]="step.number <= currentStep"
+        >
+          <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-black sm:h-9 sm:w-9"
+            [class.border-slate-950]="step.number === currentStep"
+            [class.border-emerald-400]="step.number < currentStep"
+            [class.border-slate-700]="step.number > currentStep"
+          >
+            <span *ngIf="step.number >= currentStep">{{ step.number }}</span>
+            <svg *ngIf="step.number < currentStep" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" />
+            </svg>
+          </span>
+          <span class="min-w-0">
+            <span class="block truncate text-xs font-black sm:text-sm">{{ step.label }}</span>
+            <span class="hidden text-[11px] sm:block" [class.text-slate-800]="step.number === currentStep" [class.text-slate-400]="step.number !== currentStep">{{ step.detail }}</span>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="errorMessage" class="mb-5 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+      {{ errorMessage }}
+    </div>
+
+    <div *ngIf="successMessage" class="mb-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+      {{ successMessage }}
+    </div>
+
+    <div *ngIf="loading" class="rounded-[2rem] border border-slate-800 bg-slate-900/70 p-8 text-center text-slate-400">
+      Loading your profile...
+    </div>
+
+    <form *ngIf="!loading" (ngSubmit)="nextStep()" novalidate class="rounded-[2rem] border border-slate-800 bg-slate-900/70 p-5 shadow-2xl backdrop-blur-xl sm:p-8">
+      <section *ngIf="currentStep === 1" class="space-y-5">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">Step 1: Identity</p>
+          <h2 class="mt-2 text-2xl font-black text-slate-50">The essentials</h2>
+          <p class="mt-2 text-sm text-slate-400">Your email comes from your verified account and cannot be changed here.</p>
+        </div>
+
+        <div class="grid gap-5 sm:grid-cols-2">
+          <div class="space-y-1.5">
+            <label for="username" class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Username</label>
+            <input id="username" name="username" [(ngModel)]="username" (ngModelChange)="clearFieldError('username')" [disabled]="saving" class="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30" [class.border-red-400]="getFieldError('username')" placeholder="fitpal-athlete" />
+            <p *ngIf="getFieldError('username')" class="text-xs text-red-300">{{ getFieldError('username') }}</p>
+          </div>
+          <div class="space-y-1.5">
+            <label for="fullName" class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Full Name</label>
+            <input id="fullName" name="fullName" [(ngModel)]="fullName" (ngModelChange)="clearFieldError('fullName')" [disabled]="saving" class="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30" [class.border-red-400]="getFieldError('fullName')" placeholder="Your full name" />
+            <p *ngIf="getFieldError('fullName')" class="text-xs text-red-300">{{ getFieldError('fullName') }}</p>
+          </div>
+          <div class="space-y-1.5">
+            <label for="email" class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Verified Email</label>
+            <input id="email" name="email" [value]="email" disabled class="w-full cursor-not-allowed rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-slate-500" />
+          </div>
+          <div class="space-y-1.5">
+            <label for="phoneNumber" class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Phone Number</label>
+            <input id="phoneNumber" name="phoneNumber" [(ngModel)]="phoneNumber" (ngModelChange)="clearFieldError('phoneNumber')" [disabled]="saving" type="tel" class="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30" [class.border-red-400]="getFieldError('phoneNumber')" placeholder="+91 98765 43210" />
+            <p *ngIf="getFieldError('phoneNumber')" class="text-xs text-red-300">{{ getFieldError('phoneNumber') }}</p>
+          </div>
+        </div>
+      </section>
+
+      <section *ngIf="currentStep === 2" class="space-y-5">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">Step 2: Health</p>
+          <h2 class="mt-2 text-2xl font-black text-slate-50">Your body baseline</h2>
+          <p class="mt-2 text-sm text-slate-400">This lets the app give your training a useful starting point.</p>
+        </div>
+
+        <div class="grid gap-5 sm:grid-cols-2">
+          <div class="space-y-1.5">
+            <label for="gender" class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Gender</label>
+            <select id="gender" name="gender" [(ngModel)]="gender" (ngModelChange)="onGenderChange(); clearFieldError('gender')" [disabled]="saving" class="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30" [class.border-red-400]="getFieldError('gender')">
+              <option value="" disabled>Select gender</option>
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+              <option value="non-binary">Non-binary</option>
+              <option value="prefer-not-to-say">Prefer not to say</option>
+            </select>
+            <p *ngIf="getFieldError('gender')" class="text-xs text-red-300">{{ getFieldError('gender') }}</p>
+          </div>
+          <div class="space-y-1.5">
+            <label for="dateOfBirth" class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Date of Birth</label>
+            <div class="relative">
+              <input #datePicker id="dateOfBirth" name="dateOfBirth" [(ngModel)]="dateOfBirth" (ngModelChange)="onDateOfBirthChange()" [disabled]="saving" [max]="today" type="date" class="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 pr-12 text-slate-100 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30" [class.border-red-400]="getFieldError('dateOfBirth')" />
+              <button type="button" (click)="openDatePicker(datePicker)" [disabled]="saving" class="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-emerald-400 transition hover:text-emerald-300 disabled:opacity-50" aria-label="Open date picker">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1Z" /></svg>
+              </button>
+            </div>
+            <p *ngIf="getFieldError('dateOfBirth')" class="text-xs text-red-300">{{ getFieldError('dateOfBirth') }}</p>
+          </div>
+          <div class="space-y-1.5">
+            <label for="age" class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Calculated Age</label>
+            <input id="age" name="age" [value]="age === null ? '' : age + ' years'" disabled class="w-full cursor-not-allowed rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-slate-400" placeholder="Choose date of birth" />
+          </div>
+          <div class="space-y-1.5">
+            <label for="bloodGroup" class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Blood Group <span class="normal-case tracking-normal text-slate-600">(optional)</span></label>
+            <select id="bloodGroup" name="bloodGroup" [(ngModel)]="bloodGroup" [disabled]="saving" class="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30">
+              <option value="">Prefer not to say</option>
+              <option *ngFor="let group of ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']" [value]="group">{{ group }}</option>
+            </select>
+          </div>
+          <div class="space-y-1.5">
+            <label for="heightCm" class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Height (cm)</label>
+            <input id="heightCm" name="heightCm" [(ngModel)]="heightCm" (ngModelChange)="clearFieldError('heightCm')" [disabled]="saving" type="number" min="1" class="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30" [class.border-red-400]="getFieldError('heightCm')" placeholder="175" />
+            <p *ngIf="getFieldError('heightCm')" class="text-xs text-red-300">{{ getFieldError('heightCm') }}</p>
+          </div>
+          <div class="space-y-1.5">
+            <label for="weightKg" class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Weight (kg)</label>
+            <input id="weightKg" name="weightKg" [(ngModel)]="weightKg" (ngModelChange)="clearFieldError('weightKg')" [disabled]="saving" type="number" min="1" step="0.1" class="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30" [class.border-red-400]="getFieldError('weightKg')" placeholder="68" />
+            <p *ngIf="getFieldError('weightKg')" class="text-xs text-red-300">{{ getFieldError('weightKg') }}</p>
+          </div>
+        </div>
+      </section>
+
+      <section *ngIf="currentStep === 3" class="space-y-5">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">Step 3: Lifestyle</p>
+          <h2 class="mt-2 text-2xl font-black text-slate-50">Make it personal</h2>
+          <p class="mt-2 text-sm text-slate-400">Add a photo if you want. Otherwise FitPal uses a generated avatar based on your selected gender.</p>
+        </div>
+
+        <div class="grid gap-6 lg:grid-cols-[180px_1fr]">
+          <div class="rounded-3xl border border-slate-800 bg-slate-950/70 p-4">
+            <img [src]="avatarPreview" alt="Profile avatar preview" class="mx-auto h-28 w-28 rounded-3xl border border-emerald-400/20 object-cover" />
+            <label for="avatar" class="mt-4 flex cursor-pointer items-center justify-center rounded-xl border border-slate-700 px-3 py-2.5 text-center text-xs font-semibold text-slate-200 transition hover:border-emerald-400 hover:text-emerald-300">Choose photo</label>
+            <input id="avatar" name="avatar" type="file" accept="image/*" (change)="onAvatarSelected($event)" [disabled]="saving" class="sr-only" />
+            <p class="mt-2 text-center text-[11px] text-slate-500">Optional, max 2 MB</p>
+          </div>
+
+          <div class="grid gap-5 sm:grid-cols-2">
+            <div class="space-y-1.5">
+              <label for="activityLevel" class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Activity Level</label>
+              <select id="activityLevel" name="activityLevel" [(ngModel)]="activityLevel" (ngModelChange)="clearFieldError('activityLevel')" [disabled]="saving" class="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30" [class.border-red-400]="getFieldError('activityLevel')">
+                <option value="" disabled>Select activity level</option>
+                <option value="Sedentary">Sedentary</option>
+                <option value="Lightly Active">Lightly Active</option>
+                <option value="Moderately Active">Moderately Active</option>
+                <option value="Very Active">Very Active</option>
+              </select>
+              <p *ngIf="getFieldError('activityLevel')" class="text-xs text-red-300">{{ getFieldError('activityLevel') }}</p>
+            </div>
+            <div class="space-y-1.5">
+              <label for="profession" class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Profession</label>
+              <select id="profession" name="profession" [(ngModel)]="profession" (ngModelChange)="clearFieldError('profession')" [disabled]="saving" class="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30" [class.border-red-400]="getFieldError('profession')">
+                <option value="" disabled>Select profession</option>
+                <option value="Student">Student</option>
+                <option value="Working">Working</option>
+                <option value="Retired">Retired</option>
+                <option value="Homemaker">Homemaker</option>
+                <option value="Self-employed">Self-employed</option>
+                <option value="Other">Other</option>
+              </select>
+              <p *ngIf="getFieldError('profession')" class="text-xs text-red-300">{{ getFieldError('profession') }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="mt-8 flex items-center justify-between gap-3 border-t border-slate-800 pt-5">
+        <div class="flex items-center gap-2">
+          <button type="button" (click)="previousStep()" [disabled]="currentStep === 1 || saving" class="rounded-xl border border-slate-700 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-slate-500 disabled:cursor-not-allowed disabled:opacity-40">Back</button>
+          <button *ngIf="isEditMode" type="button" (click)="cancelEdit()" [disabled]="saving" class="rounded-xl px-3 py-3 text-sm font-semibold text-slate-400 transition hover:text-slate-200 disabled:opacity-50">Cancel</button>
+        </div>
+        <button type="submit" [disabled]="saving" class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 px-5 py-3 text-sm font-black text-slate-950 transition hover:from-emerald-400 hover:to-teal-300 disabled:opacity-50">
+          {{ saving ? 'Saving profile...' : (currentStep === 3 ? (isEditMode ? 'Save Changes' : 'Complete Profile') : 'Continue') }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
